@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مترو یار خط ۷</title>
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+    <style>
+        @font-face {
+            font-family: 'ginkg';
+            src: url('x.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'ginkgo';
+            src: url('n.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'ginkgoo';
+            src: url('e.ttf') format('truetype');
+        }
+        :root {
+            --neon-pink: #ff5c00;
+            --neon-blue: #AA00D4;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Tahoma', sans-serif;
+            background: #050505 url('109.png') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+            font-weight: 500;
+            font-variation-settings: 'ROND' 100;
+            font-style: normal;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 480px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 30px;
+            padding: 25px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
+        }
+
+        /* طراحی دکمه‌های گرد طبق درخواست */
+        .btn-station {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 12px;
+            border-radius: 50px; 
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.85rem;
+            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+            font-weight: 500;
+            font-variation-settings: 'ROND' 100;
+            font-style: normal;
+        }
+
+        .btn-station:hover {
+            border-radius: 17px;
+            transform: scale(0.95);
+            background: var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue);
+            color: #ffffff;
+        }
+
+        .result-panel {
+            background: rgba(0,0,0,0.6);
+            border-radius: 20px;
+            padding: 20px;
+            font-family: 'ginkgo', 'ginkg', 'ginkgoo';
+            font-weight: 500;
+            font-variation-settings: 'ROND' 100;
+            font-style: normal;
+            margin-top: 20px;
+            border-right: 4px solid var(--neon-pink);
+            text-align: right;
+            line-height: 1.8;
+        }
+
+        .highlight { color: var(--neon-blue); font-weight: bold; }
+        .hidden { display: none; }
+        h2 { text-shadow: 0 0 10px var(--neon-blue); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 id="title">مبدا را انتخاب کنید</h2>
+    
+    <div id="station-section" class="grid"></div>
+
+    <div id="day-section" class="hidden">
+        <button class="btn-station" style="width:100%; margin-bottom:10px" onclick="selectDay('روز عادی')">روز عادی (شنبه تا چهارشنبه)</button>
+        <button class="btn-station" style="width:100%; margin-bottom:10px" onclick="selectDay('پنجشنبه')">پنجشنبه</button>
+        <button class="btn-station" style="width:100%; margin-bottom:10px" onclick="selectDay('تعطیل رسمی')">تعطیل رسمی</button>
+    </div>
+
+    <div id="result-section" class="hidden">
+        <div class="result-panel" id="result-text"></div>
+        <button class="btn-station" style="width:100%; margin-top:20px; background: var(--neon-pink)" onclick="location.reload()">جستجوی جدید</button>
+    </div>
+</div>
+
+<script>
+    const stations = {
+        "ورزشگاه تختی": 1,
+        "بسیج": 2,
+        "آهنگ": 3,
+        "چهل تن دولاب": 4,
+        "شهدای 17 شهریور": 5,
+        "میدان قیام": 6,
+        "مولوی": 7,
+        "میدان محمدیه": 8,
+        "مهدیه": 9,
+        "هلال احمر": 10,
+        "بریانک": 11,
+        "کمیل": 12,
+        "رودکی": 13,
+        "شهید نواب صفوی": 14,
+        "توحید": 15,
+        "مدافعان سلامت": 16,
+        "تربیت مدرس": 17,
+        "بوستان گفتگو": 18,
+        "برج میلاد": 19,
+        "میدان صنعت": 20,
+        "شهید دادمان": 21,
+        "میدان کتاب": 22
+    };
+    let userSelection = { mabda: null, maghsad: null, day: null };
+
+    // مقداردهی اولیه ایستگاه‌ها
+    const grid = document.getElementById('station-section');
+    Object.keys(stations).forEach(name => {
+        let btn = document.createElement('button');
+        btn.className = 'btn-station';
+        btn.innerText = name;
+        btn.onclick = () => handleSelect(name);
+        grid.appendChild(btn);
+    });
+
+    function handleSelect(name) {
+        if (!userSelection.mabda) {
+            userSelection.mabda = name;
+            document.getElementById('title').innerText = "مقصد را انتخاب کنید";
+        } else {
+            userSelection.maghsad = name;
+            grid.classList.add('hidden');
+            document.getElementById('day-section').classList.remove('hidden');
+            document.getElementById('title').innerText = "نوع روز";
+        }
+    }
+
+    async function selectDay(day) {
+        userSelection.day = day;
+        document.getElementById('day-section').classList.add('hidden');
+        document.getElementById('title').innerText = "در حال محاسبه...";
+        await startCalculation();
+    }
+
+    async function startCalculation() {
+        const mIdx = stations[userSelection.mabda];
+        const tIdx = stations[userSelection.maghsad];
+        let folder = "";
+
+        // رعایت دقیق توابع انتخاب پوشه از کد پایتون
+        if (tIdx >= mIdx) {
+            if (userSelection.day === "پنجشنبه") folder = "بسیج_5";
+            else if (userSelection.day === "تعطیل رسمی") folder = "بسیج_تعطیل";
+            else folder = "بسیج_عادی";
+        } else {
+            if (userSelection.day === "پنجشنبه") folder = "کتاب_5";
+            else if (userSelection.day === "تعطیل رسمی") folder = "کتاب_تعطیل";
+            else folder = "کتاب_عادی";
+        }
+
+        try {
+            // خواندن فایل‌ها از سرور
+            const respMabda = await fetch(`${folder}/${mIdx}.txt`);
+            const respMaghsad = await fetch(`${folder}/${tIdx}.txt`);
+            
+            const dataMabda = (await respMabda.text()).split('\n').map(Number);
+            const dataMaghsad = (await respMaghsad.text()).split('\n').map(Number);
+
+            displayResults(dataMabda, dataMaghsad);
+        } catch (err) {
+            alert("خطا در بارگذاری اطلاعات! مطمئن شوید فایل‌ها در سرور موجود هستند.");
+        }
+    }
+
+    function displayResults(linesM, linesX) {
+        const now = new Date();
+        const nowMinutes = (now.getHours() * 60) + now.getMinutes();
+        let resultDiv = document.getElementById('result-text');
+        let found = false;
+
+        for (let i = 0; i < linesM.length; i++) {
+            let metro = linesM[i] - nowMinutes;
+            if (metro >= 0) {
+                found = true;
+                let sub1 = metro === 0 ? "به موقع رسیدی! درحال ورود!" : `قطار اول حدود <span class="highlight">${metro}</span> دقیقه دیگر می‌رسد`;
+                let arrive1 = `رسیدن به مقصد با قطار اول: <span class="highlight">${linesX[i] - linesM[i] + metro}</span> دقیقه دیگر`;
+                
+                let sub2 = "دیر رسیدید قطار دومی درکار نیست🙃";
+                let arrive2 = "";
+                if (linesM[i+1]) {
+                    let nextMet = linesM[i+1] - nowMinutes;
+                    sub2 = `قطار دوم حدود <span class="highlight">${nextMet}</span> دقیقه دیگر می‌رسد`;
+                    arrive2 = `رسیدن به مقصد با قطار دوم: <span class="highlight">${linesX[i+1] - linesM[i+1] + nextMet}</span> دقیقه دیگر`;
+                }
+
+                resultDiv.innerHTML = `
+                    ایستگاه <span class="highlight">${userSelection.mabda}</span> به <span class="highlight">${userSelection.maghsad}</span><br>
+                    ------------------------------------------<br>
+                    ${sub1}<br>${arrive1}<br><br>
+                    ${sub2}<br>${arrive2}
+                `;
+                break;
+            }
+        }
+
+        if (!found) resultDiv.innerText = "دیر رسیدی پایان فعالیت خط🙃";
+        
+        document.getElementById('result-section').classList.remove('hidden');
+        document.getElementById('title').innerText = "زمان‌بندی حرکت";
+    }
+</script>
+</body>
+</html>
