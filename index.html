@@ -319,17 +319,20 @@ footer { position: fixed; bottom: 40px; left: 20px; right: 20px; display: flex; 
     const startBtn = document.getElementById('firstRunStart');
     const input = document.getElementById('msg-input');
     const responseBox = document.getElementById('ai-response');
+
     function formatText(text) {
         return text.replace(
             /\*\*(.*?)\*\*/g,
             '$1'
         );
     }
+
     function setResponse(text, isThinking = false) {
         responseBox.textContent = text;
         responseBox.classList.toggle('empty', !text);
         responseBox.style.fontStyle = isThinking ? 'normal' : 'normal';
     }
+
     function setbtn(text, isThinking = false) {
         responseBox.textContent = text;
         responseBox.classList.toggle('empty', !text);
@@ -340,27 +343,25 @@ footer { position: fixed; bottom: 40px; left: 20px; right: 20px; display: flex; 
 
         const img = btn.querySelector("img");
         img.src = "ai.png";
-        
     }
+
     function changeHopBtn() {
         const btn = document.getElementById("hopbtn");
-
         btn.onclick = () => setbtn("");
-
         const img = btn.querySelector("img");
         img.src = "close.png";
-        
     }
+
     async function openPage() {
         const metroData = await fetch('metro.json')
             .then(response => response.text());
         
-        const a = "sk"
-        const b = "or"
-        const c = "v1"
-        const d = "d0b66b198d1f8a97e075563f6adce8f"
-        const e = "65bcef197b84c78952269353944786f64"
-        const key = a+"-"+b+"-"+c+"-"+d+e
+        const a = "sk";
+        const b = "or";
+        const c = "v1";
+        const d = "d0b66b198d1f8a97e075563f6adce8f";
+        const e = "65bcef197b84c78952269353944786f64";
+        const key = a + "-" + b + "-" + c + "-" + d + e;
 
         const message = (input.value || '').trim();
         if (!message) {
@@ -368,40 +369,65 @@ footer { position: fixed; bottom: 40px; left: 20px; right: 20px; display: flex; 
             return;
         }
 
-        // اول کادر را برای ارسال دوباره تنظیم می‌کنیم
+        // نمایش وضعیت لودینگ اصلی خودت
         setResponse('آیو درحال مسیریابی است...', true);
 
-        try {
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${key}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    model: "google/gemma-4-31b-it:free",
-                    messages: [
-                        {
-                            role: "system",
-                            content: metroData
-                        },
-                        {
-                            role: "user",
-                            content: message
-                        }
-                    ]
-                })
-            });            
-            const data = await response.json();
-            console.log(JSON.stringify(data, null, 2));
-            const text = data.choices[0].message.content || "پاسخی دریافت نشد";
-            if (!response.ok) {
-                throw new Error(text || `HTTP ${response.status}`);
+        let success = false;
+        let attempts = 0;
+
+        while (!success) {
+            try {
+                attempts++;
+                
+                // اگر تلاش دوم به بعد بود، ۷۰۰ میلی‌ثانیه (۰.۷ ثانیه) صبر میکنه
+                if (attempts > 1) {
+                    await new Promise(resolve => setTimeout(resolve, 700));
+                }
+
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${key}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "google/gemma-4-31b-it:free",
+                        messages: [
+                            {
+                                role: "system",
+                                content: metroData
+                            },
+                            {
+                                role: "user",
+                                content: message
+                            }
+                        ]
+                    })
+                });            
+                
+                const data = await response.json();
+                console.log(`تلاش ${attempts}:`, data);
+
+                if (!response.ok || data.error) {
+                    throw new Error(data.error?.message || `HTTP ${response.status}`);
+                }
+
+                if (!data.choices || !data.choices[0]) {
+                    throw new Error("ساختار پاسخ نامعتبر است.");
+                }
+
+                const text = data.choices[0].message.content || "پاسخی دریافت نشد";
+                
+                // خروجی موفقیت‌آمیز
+                changeHopBtn();
+                setResponse(formatText(text));
+                
+                success = true; 
+
+            } catch (err) {
+                // خطاها فقط توی کنسول لاگ میشن تا کاربر متوجه تکرار نشه
+                console.error(`خطا در تلاش ${attempts}:`, err?.message);
             }
-            changeHopBtn();
-            setResponse(formatText(text));
-        } catch (err) {
-            setResponse('خطا در دریافت پاسخ: ' + (err?.message || 'نامشخص'));
         }
     }
 
@@ -457,7 +483,6 @@ footer { position: fixed; bottom: 40px; left: 20px; right: 20px; display: flex; 
     window.handleKeyPress = handleKeyPress;
 })();
 </script>
-
 
 </body>
 </html>
