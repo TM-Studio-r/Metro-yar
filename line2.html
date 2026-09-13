@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>مترو یار خط ۲</title><link rel="icon" href="favicon.ico" sizes="any"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="stylesheet" href="line.css">
+<style>:root{--line-color:#263B8F;}</style></head><body>
+<div class="container">
+  <h2 id="title">مبدا را انتخاب کنید</h2>
+  <div id="subtitle" class="sub-title">برنامه حرکت مستقیم از Excel خوانده می‌شود</div>
+  <div id="service-section" class="hidden"></div>
+  <div id="station-section" class="grid hidden"></div>
+  <div id="day-section" class="hidden">
+    <button class="btn-station" style="width:100%;margin-bottom:9px" data-day="normal">روز عادی (شنبه تا چهارشنبه)</button>
+    <button class="btn-station" style="width:100%;margin-bottom:9px" data-day="thursday">پنجشنبه</button>
+    <button class="btn-station" style="width:100%" data-day="holiday">تعطیل رسمی / جمعه</button>
+  </div>
+  <div id="result-section" class="hidden"><div class="result-panel" id="result-text"></div><button id="again" class="btn-station" style="margin-top:14px;background:var(--line-color);color:#000">جستجوی جدید</button></div>
+  <a class="back-link" href="index.html">بازگشت به صفحه اصلی</a>
+  <div class="meta">منبع: برنامه زمان‌بندی Excel مترو</div>
+</div>
+<script src="schedule-config.js"></script><script src="excel-reader.js"></script><script src="metro-core.js"></script>
+<script>
+(async function(){
+  const lineId=2; const title=document.getElementById('title'), sub=document.getElementById('subtitle');
+  const service=document.getElementById('service-section'), stationBox=document.getElementById('station-section'), dayBox=document.getElementById('day-section'), result=document.getElementById('result-section'), resultText=document.getElementById('result-text');
+  let data,line,mode={mode:'main'}; let pick={origin:null,destination:null,day:null};
+  function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+  function showStations(){
+    stationBox.innerHTML=''; stationBox.classList.remove('hidden');
+    const main=line.main_route||[]; const branch=line.branch_route||[]; const continuation=line.continuation_route||[];
+    function addButton(name){const b=document.createElement('button');b.className='btn-station';b.textContent=name;b.onclick=()=>selectStation(name);stationBox.appendChild(b);}
+    if(mode.mode==='branch'&&branch.length){const a=document.createElement('div');a.className='section-label';a.textContent='خط اصلی';stationBox.appendChild(a);main.forEach(addButton);const c=document.createElement('div');c.className='section-label';c.textContent=line.branch_label;stationBox.appendChild(c);branch.filter(x=>!main.includes(x)).forEach(addButton);}
+    else if(lineId===5){const seen=new Set(); [...main,...continuation].forEach(x=>{if(!seen.has(x)){seen.add(x);addButton(x);}});}
+    else main.forEach(addButton);
+    title.textContent='مبدا را انتخاب کنید'; sub.textContent='ایستگاه مبدا را انتخاب کنید';
+  }
+  function selectStation(name){
+    if(!pick.origin){pick.origin=name;title.textContent='مقصد را انتخاب کنید';sub.textContent='ایستگاه مقصد را انتخاب کنید';return;}
+    if(name===pick.origin){sub.textContent='مبدا و مقصد نمی‌توانند یکسان باشند';return;}
+    pick.destination=name; stationBox.classList.add('hidden'); dayBox.classList.remove('hidden'); title.textContent='نوع روز'; sub.textContent='روز جدول زمان‌بندی را انتخاب کنید';
+  }
+  document.querySelectorAll('#day-section [data-day]').forEach(btn=>btn.onclick=async()=>{
+    pick.day=btn.dataset.day; dayBox.classList.add('hidden'); result.classList.remove('hidden'); title.textContent='در حال خواندن Excel...'; sub.textContent='در حال محاسبه نزدیک‌ترین قطار'; resultText.innerHTML='<div class="loading">در حال بررسی برنامه حرکت…</div>';
+    try{const planner=await MetroCore.buildPlanner(lineId,mode.mode,pick.day,pick.origin,pick.destination);MetroCore.renderResult(resultText,planner,pick.origin,pick.destination);title.textContent='زمان‌بندی حرکت';sub.textContent='نتیجه بر اساس Excel فعلی';}
+    catch(e){console.error(e);resultText.innerHTML='<span class="error">خطا در خواندن Excel یا ساختار فایل.</span><br><span class="muted">اگر Excel جدید ساختارش عوض شده، فایل باید دوباره بررسی شود.</span>';title.textContent='خطا';sub.textContent='جزئیات در کنسول مرورگر ثبت شد';}
+  });
+  document.getElementById('again').onclick=()=>location.reload();
+  try{data=await MetroCore.loadMetroData();line=data.lines.find(x=>x.id===lineId); if(!line)throw new Error('Line not found');
+      if((lineId===1||lineId===4)&&line.branch_route&&line.branch_route.length){service.classList.remove('hidden');service.innerHTML=''; const h=document.createElement('div');h.className='section-label';h.textContent='نوع سرویس را انتخاب کنید';service.appendChild(h);
+       const main=document.createElement('button');main.className='btn-choice';main.innerHTML=esc(line.label)+'<small>مسیر اصلی</small>';main.onclick=()=>{mode.mode='main';service.classList.add('hidden');showStations();};service.appendChild(main);
+       const br=document.createElement('button');br.className='btn-choice';br.innerHTML=esc(line.branch_label)+'<small>با تعویض سرویس در ایستگاه اتصال</small>';br.onclick=()=>{mode.mode='branch';service.classList.add('hidden');showStations();};service.appendChild(br);
+       title.textContent='انتخاب سرویس';sub.textContent='نوع مسیر را انتخاب کنید';
+      } else {mode.mode='main';showStations();}
+  }catch(e){title.textContent='خطا در بارگذاری';sub.textContent='metro.json در دسترس نیست';console.error(e);}
+})();
+</script></body></html>

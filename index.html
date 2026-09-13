@@ -95,7 +95,7 @@ body {
 .btn-main, .btn-maain, .btn-map, .btn-maaain {
     width: 100%;
     padding: 18px;
-    margin: 15px 0;
+    margin: 4px 0;
     font-size: 1rem;
     border-radius: 50px;
     font-family: 'ginkgo', 'ginkg', 'ginkgoo';
@@ -278,20 +278,13 @@ footer { position: fixed; bottom: 40px; left: 20px; right: 20px; display: flex; 
 <div class="container" id="mainContainer">
     <h2>به مترویار خوش‌آمدید!</h2>
     <div class="btz">
-        <button class="btn-main"
-            onclick="window.location.href='line3.html'">
-            مترو یار خط ۳
-        </button>
-
-        <button class="btn-maaain"
-            onclick="window.location.href='line6.html'">
-            مترو یار خط ۶
-        </button>
-
-        <button class="btn-maain"
-            onclick="window.location.href='line7.html'">
-            مترو یار خط ۷
-        </button>
+        <button class="btn-main" onclick="window.location.href='line1.html'">مترو یار خط ۱</button>
+        <button class="btn-main" onclick="window.location.href='line2.html'">مترو یار خط ۲</button>
+        <button class="btn-main" onclick="window.location.href='line3.html'">مترو یار خط ۳</button>
+        <button class="btn-main" onclick="window.location.href='line4.html'">مترو یار خط ۴</button>
+        <button class="btn-main" onclick="window.location.href='line5.html'">مترو یار خط ۵</button>
+        <button class="btn-main" onclick="window.location.href='line6.html'">مترو یار خط ۶</button>
+        <button class="btn-main" onclick="window.location.href='line7.html'">مترو یار خط ۷</button>
 
         <button class="btn-map"
             onclick="window.location.href='map.png'">
@@ -391,7 +384,7 @@ footer { position: fixed; bottom: 40px; left: 20px; right: 20px; display: flex; 
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: "nvidia/nemotron-3-nano-30b-a3b:free",
+                        model: "nvidia/nemotron-3-ultra-550b-a55b:free",
                         messages: [
                             {
                                 role: "system",
